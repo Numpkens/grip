@@ -1,0 +1,4 @@
+# Go Reader Interface Processor
+
+## 11 Jan 2026:
+   I chose a nested pattern for the project structure over a flat structure in order to separate concerns into routing and data structures. Spent quite some time deciding on what to use for a front-end, but in the end  I decided to move away from a tui application and will use the html/template from the standard library to handle a "card view" rendering for the blog posts. I put some minimal code in the main.go as well as the handlers.go and the blog.go. One of the main challenges today was that I am used to working in a flat structure. I instinctively made a duplicate main.go file in the root of the project. It took me a little time to figure out why i was getting import errors.  One other note about this project is that I will be using multiple machines to write the code. So, I will be using mainly pull and push git commands. I don't really see a need for using branches at this time but this may change.
