@@ -6,12 +6,8 @@ import (
 	"net/http"
 )
 
-type Scraper interface {
-    Search(query string) ([]Post, error)
-}
-
 type Source interface {
-		Search(query string) ([]Post, error)
+	Search(query string) ([]Post, error)
 }
 
 type DevTo struct{}
@@ -20,7 +16,7 @@ func (d *DevTo) Search(query string) ([]Post, error) {
 	url := fmt.Sprintf("https://dev.to/api/articles?tag=%s", query)
 
 	resp, err := http.Get(url)
-	if err != nil{
+	if err != nil {
 		return nil, fmt.Errorf("devto api call failed: %w", err)
 	}
 
@@ -28,7 +24,7 @@ func (d *DevTo) Search(query string) ([]Post, error) {
 
 	var apiResults []struct {
 		Title string `json:"title"`
-		URL string `json:"url"`
+		URL   string `json:"url"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&apiResults); err != nil {
@@ -36,19 +32,19 @@ func (d *DevTo) Search(query string) ([]Post, error) {
 	}
 
 	var posts []Post
-	for _, r := range apiResults{
+	for _, r := range apiResults {
 		posts = append(posts, Post{
-		Title: r.Title,
-		URL: r.URL,
-		Source: "Dev.to",
+			Title:  r.Title,
+			URL:    r.URL,
+			Source: "Dev.to",
 		})
 	}
 	return posts, nil
 }
-	
+
 type Post struct {
-	Title   string
-	URL string
+	Title  string
+	URL    string
 	Source string
 }
 
