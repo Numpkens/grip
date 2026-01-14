@@ -2,3 +2,5 @@ grip
 grip.exe
 vendor/
 .DS_Store
+grip_bin
+main
