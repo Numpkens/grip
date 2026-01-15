@@ -4,6 +4,7 @@ import (
 	"github.com/Numpkens/grip/internal/logic"
 	"html/template"
 	"net/http"
+	"encoding/json"
 )
 
 type Handler struct {
@@ -18,6 +19,12 @@ func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	posts := h.Engine.FetchAll(query)
+
+	if r.Header.Get("Accept") == "application/json" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(posts)
+		return
+	}
 
 	err := h.Templ.Execute(w, posts)
 	if err != nil {

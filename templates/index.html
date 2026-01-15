@@ -54,6 +54,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                         </svg>
                     </a>
+                    <p class="text-xs text-gray-400 mt-1">
+                      Published on: {{.PublishedAt.Format "Jan 02, 2006"}}
+                    </p>
                 </div>
             </article>
             {{else}}
