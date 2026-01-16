@@ -5,14 +5,15 @@ import (
 	"time"
 	"fmt"
 	"sort"
+	"context"
 )
 
 type TestSource struct {
 	Posts []Post
 }
 
-func (ts *TestSource) Search(query string) ([]Post, error) {
-	return ts.Posts, nil
+func (s *TestSource) Search(ctx context.Context, query string) ([]Post, error) { 
+      return s.Posts, nil 
 }
 
 func TestFetchAllSorting(t *testing.T) {
