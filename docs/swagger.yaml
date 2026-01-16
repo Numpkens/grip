@@ -1,0 +1,40 @@
+basePath: /
+definitions:
+  logic.Post:
+    properties:
+      published_at:
+        type: string
+      source:
+        type: string
+      title:
+        type: string
+      url:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Concurrent Developer News Aggregator.
+  title: GRIP API
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: Aggregates results from multiple trusted developer blog sites
+      parameters:
+      - description: Search Query
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      - text/html
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/logic.Post'
+            type: array
+      summary: Search Blogs for Developers
+swagger: "2.0"

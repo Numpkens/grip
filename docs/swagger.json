@@ -1,0 +1,61 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Concurrent Developer News Aggregator.",
+        "title": "GRIP API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/": {
+            "get": {
+                "description": "Aggregates results from multiple trusted developer blog sites",
+                "produces": [
+                    "application/json",
+                    "text/html"
+                ],
+                "summary": "Search Blogs for Developers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search Query",
+                        "name": "q",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/logic.Post"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "logic.Post": {
+            "type": "object",
+            "properties": {
+                "published_at": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

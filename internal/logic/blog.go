@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"encoding/xml"
+	"log"
 )
 
 type Source interface {
@@ -226,4 +228,64 @@ func (e *Engine) FetchAll(query string) []Post {
 		allPosts = allPosts[:20]
 	}
 	return allPosts
+}
+
+type bootRSS struct {
+	XMLName xml.Name `xml:"rss"`
+	Channel struct {
+		Items []struct {
+			Title string `xml:"title"`
+			Link string `xml:"link"`
+			PubDate string `xml:"pubDate"`
+		} `xml:"item"`
+	} `xml:"channel"`
+}
+
+type BootDev struct {}
+
+func (b *BootDev) Search(query string) ([]Post, error) {
+	client := &http.Client{Timeout: 50 * time.Millisecond}
+	
+	req, err := http.NewRequest("GET", "https://blog.boot.dev/index.xml", nil)
+	if err != nil {
+		return nil, err
+	}
+	
+	req.Header.Set("User-Agent", "GripAggregator/1.0 (Contact: numpkins1228@gmail.com)")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("boot.dev returned status: %d", resp.StatusCode)
+	}
+
+	var rss bootRSS
+	if err := xml.NewDecoder(resp.Body).Decode(&rss); err != nil {
+		return nil, fmt.Errorf("failed to decode boot.dev xml: %w", err)
+	}
+
+	var posts []Post
+	for _, item := range rss.Channel.Items {
+		if strings.Contains(strings.ToLower(item.Title), strings.ToLower(query)) {
+			parsedDate, err := time.Parse(time.RFC1123Z, item.PubDate)
+			if err != nil {
+				parsedDate, err = time.Parse(time.RFC1123, item.PubDate)
+				if err != nil {
+					log.Printf("Boot.dev parse failed for %s: %v", item.PubDate, err)
+					parsedDate = time.Unix(0, 0)
+				}
+			}
+			posts = append(posts, Post{
+				Title:       item.Title,
+				URL:         item.Link,
+				Source:      "Boot.dev",
+				PublishedAt: parsedDate,
+			})
+		}
+	}
+	return posts, nil
 }

@@ -11,7 +11,14 @@ type Handler struct {
 	Templ  *template.Template
 	Engine *logic.Engine
 }
-
+//HandleHome godoc
+//@Summary Search Blogs for Developers
+//@Description Aggregates results from multiple trusted developer blog sites
+//@Produce json
+//@Produce html
+//@Param q query string false "Search Query"
+//@Success 200 {array} logic.Post
+//@Router / [get]
 func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 	if query == "" {
