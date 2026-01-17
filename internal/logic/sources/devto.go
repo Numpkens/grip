@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
 	"github.com/Numpkens/grip/internal/logic"
 )
 

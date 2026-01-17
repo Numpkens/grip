@@ -33,6 +33,8 @@ func main() {
 			&sources.HackerNews{Client: commonClient},
 			&sources.Hashnode{Client: commonClient},
 			&sources.BootDev{Client: commonClient},
+			&sources.Lobsters{Client: commonClient, BaseURL: "https://lobste.rs"},
+			&sources.FreeCodeCamp{Client: commonClient, BaseURL: "https://www.freecodecamp.org"},
 		},
 	}
 
