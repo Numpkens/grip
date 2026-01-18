@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,56 +16,80 @@ type FreeCodeCamp struct {
 }
 
 func (f *FreeCodeCamp) Search(ctx context.Context, query string) ([]logic.Post, error) {
-	const apiKey = "2524043232675924738541916"
-	apiURL := f.BaseURL
-	if apiURL == "" {
-		apiURL = "https://www.freecodecamp.org"
-	}
-    
-	finalURL := fmt.Sprintf("%s/news/ghost/api/v3/content/posts/?key=%s&filter=tag:%s", apiURL, apiKey, query)
+	
+	url := "https://gql.hashnode.com"
 
-	req, err := http.NewRequestWithContext(ctx, "GET", finalURL, nil)
+	
+	jsonData := map[string]interface{}{
+		"query": `
+			query {
+				publication(host: "freecodecamp.org/news") {
+					posts(first: 10, filter: { tagSlugs: ["` + query + `"] }) {
+						edges {
+							node {
+								title
+								url
+								publishedAt
+							}
+						}
+					}
+				}
+			}`,
+	}
+
+	body, _ := json.Marshal(jsonData)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
 
-	req.Header.Set("User-Agent", "GripAggregator/1.0 (+https://github.com/Numpkens/grip; numpkins1222@gmail.com)")
-
-	fmt.Printf("[DEBUG] FCC Fetching: %s\n", finalURL)
 	resp, err := f.Client.Do(req)
 	if err != nil {
-		fmt.Printf("[DEBUG] FCC Request Error: %v\n", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	fmt.Printf("[DEBUG] FCC Status Code: %d\n", resp.StatusCode)
+	fmt.Printf("[DEBUG] FCC status code: %d for query: %s\n", resp.StatusCode, query)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
 	}
 
-	var apiResults struct {
-		Posts []struct {
-			Title       string `json:"title"`
-			URL         string `json:"url"`
-			PublishedAt string `json:"published_at"`
-		} `json:"posts"`
+
+	var response struct {
+		Data struct {
+			Publication struct {
+				Posts struct {
+					Edges []struct {
+						Node struct {
+							Title       string `json:"title"`
+							URL         string `json:"url"`
+							PublishedAt string `json:"publishedAt"`
+						} `json:"node"`
+					} `json:"edges"`
+				} `json:"posts"`
+			} `json:"publication"`
+		} `json:"data"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&apiResults); err != nil {
-		return nil, err 
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
 	}
+
+	fmt.Printf("[DEBUG] FCC parsed %d posts from API\n", len(response.Data.Publication.Posts.Edges))
 
 	var posts []logic.Post
-	for _, r := range apiResults.Posts {
-		parsedDate, _ := time.Parse(time.RFC3339, r.PublishedAt)
+	for _, edge := range response.Data.Publication.Posts.Edges {
+		parsedDate, _ := time.Parse(time.RFC3339, edge.Node.PublishedAt)
 		posts = append(posts, logic.Post{
-			Title:       r.Title,
-			URL:         r.URL,
+			Title:       edge.Node.Title,
+			URL:         edge.Node.URL,
 			Source:      "FreeCodeCamp",
 			PublishedAt: parsedDate,
 		})
 	}
+
+	fmt.Printf("[DEBUG] FCC (Hashnode) found %d posts\n", len(posts))
 	return posts, nil
 }

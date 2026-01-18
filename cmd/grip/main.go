@@ -26,7 +26,6 @@ func main() {
 		},
 	}
 
-	
 	engine := &logic.Engine{
 		Sources: []logic.Source{
 			&sources.DevTo{Client: commonClient},
