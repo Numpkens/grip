@@ -17,7 +17,7 @@ func main() {
 	tmpl := template.Must(template.ParseFiles("templates/index.html"))
 
 
-	commonClient := &http.Client{
+	httpClient := &http.Client{
 		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
 			MaxIdleConns:        100,
@@ -28,12 +28,12 @@ func main() {
 
 	engine := &logic.Engine{
 		Sources: []logic.Source{
-			&sources.DevTo{Client: commonClient},
-			&sources.HackerNews{Client: commonClient},
-			&sources.Hashnode{Client: commonClient},
-			&sources.BootDev{Client: commonClient},
-			&sources.Lobsters{Client: commonClient, BaseURL: "https://lobste.rs"},
-			&sources.FreeCodeCamp{Client: commonClient, BaseURL: "https://www.freecodecamp.org"},
+			&sources.DevTo{Client: httpClient},
+			&sources.HackerNews{Client: httpClient},
+			&sources.Hashnode{Client: httpClient},
+			&sources.BootDev{Client: httpClient},
+			&sources.Lobsters{Client: httpClient, BaseURL: "https://lobste.rs"},
+			&sources.FreeCodeCamp{Client: httpClient, BaseURL: "https://www.freecodecamp.org"},
 		},
 	}
 

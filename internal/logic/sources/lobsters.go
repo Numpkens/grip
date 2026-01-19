@@ -16,12 +16,12 @@ type Lobsters struct {
 
 func (l *Lobsters) Search(ctx context.Context, query string) ([]logic.Post, error) {
    
-	apiURL := l.BaseURL
-	if apiURL == "" {
-		apiURL = "https://lobste.rs"
+	endpoint := l.BaseURL
+	if endpoint == "" {
+		endpoint = "https://lobste.rs"
 	}
     
-	url := fmt.Sprintf("%s/t/%s.json", apiURL, query)
+	url := fmt.Sprintf("%s/t/%s.json", endpoint, query)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -41,18 +41,18 @@ func (l *Lobsters) Search(ctx context.Context, query string) ([]logic.Post, erro
         return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
     }
 
-	var apiResults []struct {
+	var payload []struct {
 		Title       string `json:"title"`
 		URL         string `json:"url"`
 		PublishedAt string `json:"created_at"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&apiResults); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		return nil, err 
 	}
 
 	var posts []logic.Post
-	for _, r := range apiResults {
+	for _, r := range payload {
 		parsedDate, _ := time.Parse(time.RFC3339, r.PublishedAt)
 
 		posts = append(posts, logic.Post{

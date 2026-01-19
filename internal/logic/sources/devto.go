@@ -16,12 +16,12 @@ type DevTo struct {
 
 func (d *DevTo) Search(ctx context.Context, query string) ([]logic.Post, error) {
    
-	apiURL := d.BaseURL
-	if apiURL == "" {
-		apiURL = "https://dev.to/api"
+	endpoint := d.BaseURL
+	if endpoint == "" {
+		endpoint = "https://dev.to/api"
 	}
     
-	url := fmt.Sprintf("%s/articles?tag=%s", apiURL, query)
+	url := fmt.Sprintf("%s/articles?tag=%s", endpoint, query)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -39,19 +39,23 @@ func (d *DevTo) Search(ctx context.Context, query string) ([]logic.Post, error) 
         return nil, fmt.Errorf("devto api error: status %d", resp.StatusCode)
     }
 
-	var apiResults []struct {
+	var payload []struct {
 		Title       string `json:"title"`
 		URL         string `json:"url"`
 		PublishedAt string `json:"published_at"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&apiResults); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(payload); err != nil {
 		return nil, err 
 	}
 
 	var posts []logic.Post
-	for _, r := range apiResults {
-		parsedDate, _ := time.Parse(time.RFC3339, r.PublishedAt)
+	for _, r := range payload {
+		parsedDate, err := time.Parse(time.RFC3339, r.PublishedAt)
+		if err != nil{
+			log.Printf("Error return while parsing time stamp: %v", err)
+			continue
+		}
 
 		posts = append(posts, logic.Post{
 			Title:       r.Title,
