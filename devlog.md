@@ -25,3 +25,6 @@ Today was a length day for me.  Found myself scrolling a bit. However, I did mag
 
 ## 1/18
 Spent alot of time changing desktop enviroments and trying a different IDE to see I can work a bit quicker without the vim mistakes. For the project today i debugged the freecodecamp source because it was using hashnode so I refactored the original FCC source to take graphql instead of json data. I am pondering whether to add any more sources. Since the logic is in place, it is turning into a simple copy and paste from one source to another and making some minor changes ie urls, struct fields and names. As of right now the project can read and sort json, graphql, rss and xml. and has six sources. So, I think I will start refactoring and refining the structure.
+
+## 1/20
+Spent the day rethinking my sorting logic and made some minor changes. Not alot of actual writing of code today in the project. Spent more time thinking of the articiture. I did notice that I was not using a pointer in one of the newer functions and I did not properly have a way to print that log. The result was that I had a source return 0 results but no way to know that because I was changing the copy of the slice not the slice in memory. 
