@@ -25,7 +25,7 @@ func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		query = "golang"
 	}
 
-	posts := h.Engine.Collect(query)
+	posts := h.Engine.Collect(r.Context(), query)
 
 	if r.Header.Get("Accept") == "application/json" {
 		w.Header().Set("Content-Type", "application/json")

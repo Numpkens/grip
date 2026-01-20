@@ -63,7 +63,6 @@ func (e *Engine) Collect (ctx context.Context, query string) []Post {
 		}(s)
 	}
 
-	
 	go func() {
 		wg.Wait()
 		close(resultsChan)
@@ -89,6 +88,6 @@ func (e *Engine) Collect (ctx context.Context, query string) []Post {
 
 func NewEngine(source []Source) *Engine {
 	return &Engine{
-		Sources: sources,
+		Sources: source,
 	}
 }

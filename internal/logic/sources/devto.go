@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 	"github.com/Numpkens/grip/internal/logic"
+	"log"
 )
 
 type DevTo struct {
@@ -45,7 +46,7 @@ func (d *DevTo) Search(ctx context.Context, query string) ([]logic.Post, error) 
 		PublishedAt string `json:"published_at"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(payload); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		return nil, err 
 	}
 

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 	"github.com/Numpkens/grip/internal/logic"
+	"log"
 )
 
 type Lobsters struct {
@@ -53,7 +54,11 @@ func (l *Lobsters) Search(ctx context.Context, query string) ([]logic.Post, erro
 
 	var posts []logic.Post
 	for _, r := range payload {
-		parsedDate, _ := time.Parse(time.RFC3339, r.PublishedAt)
+		parsedDate, err := time.Parse(time.RFC3339, r.PublishedAt)
+		if err != nil{
+			log.Printf("Error return while parsing time stamp: %v", err)
+			continue
+		}
 
 		posts = append(posts, logic.Post{
 			Title:       r.Title,
