@@ -36,6 +36,6 @@ func main() {
 	}
 
 	for i, p := range posts {
-		fmt.Printf("[%d] %s (%s)\n", i+1, p.Title, p.Source)
+		fmt.Printf("[%d]  %-60s | %s\n", i+1, p.Title, p.Source)
 	}
 }

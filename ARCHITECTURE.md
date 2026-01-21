@@ -1,47 +1,36 @@
-# Architecture: GRIP Aggregator
+# Architecture: GRIP Aggregator (Go Reader Interface Processor)
 
 ## Overview
-GRIP is a **headless, concurrent search engine** designed to aggregate developer blog content from multiple sources (Dev.to, Lobsters, etc.) into a single stream sorted by date published. The system is built with a "Logic-First" approach, ensuring the core engine is entirely decoupled from the delivery method whether that be web, external call or CLI.
+GRIP is a **headless, concurrent search engine** built to aggregate developer-centered blog content into a single stream. The goal was a "Logic-First" approach: keeping the engine's "brain" entirely separate from how the data is actually seen (web, JSON, or CLI). This ensures that the engine doesn't care if it's feeding a browser, terminal or a separate application.
 
 ## Core Components
 
-### 1. The Headless Engine (`internal/logic`)
-The Engine serves as the central brain. It is "source-agnostic," meaning it has no knowledge of HTTP, HTML, or JSON. It simply accepts a context.Context and a search string, and returns a slice.
+### 1. The Headless Engine (internal/logic)
+The engine is the central brain. It is completely "source-agnostic". It doesn't know about HTTP or HTML; it just accepts a search string and a context, manages the concurrency, and hands back a clean slice of results.
 
-### 2. Source Agnosticism (The Strategy Pattern)
-The system defines a Source interface. Any new blog or API can be added to GRIP without modifying any of the engine code.
-* **Implementation:** Individual sources (e.g., sources.DevTo, sources.Lobsters) are defined in internal/logic/sources.
-* **Dependency Injection:** Sources are instantiated and injected into the engine at the application entry point (main.go).
+### 2. Source Agnosticism & Strategy Pattern
+The project uses a Source interface to stay scalable. 
+* **The Benefit:** We can plug in new providers, whether they use JSON, GraphQL or RSS, by just implementing the search method.
+* **Dependency Injection:** Sources are "injected" at the entry point (main.go), so the engine never has to hardcode a specific provider.
 
-### 3. Concurrency Model: Fan-Out / Fan-In
-To ensure high performance and low latency, GRIP uses a **Fan-Out** pattern:
-* The Engine spawns a separate **Goroutine** for every registered source.
-* Each source performs its network I/O independently.
-* A sync.WaitGroup ensures the Engine waits for all sources to report back (or timeout) before proceeding.
+### 3. Concurrency: Fan-Out / Fan-In
+Originally, GRIP processed searches sequentially, which was too slow (~1000ms). By moving to a **Fan-Out** pattern:
+* Every source gets its own goroutine.
+* A sync.WaitGroup ensures we don't return until everyone is finished or the timeout hits.
+* This brought response times down to a sub 500ms even with six sources active.
 
 ## Technical Design Decisions
 
-### Min-Heap Sorting ($O(N \log K)$)
-Instead of collecting thousands of results and performing a heavy sort on a massive slice, GRIP utilizes a **Min-Heap** (resultsHeap) to maintain a "Top 20" list in real-time.
-* **Why:** This is to ensure the memory footprint remains constant regardless of how many results the external APIs return.
-* **Efficiency:** We only keep the 20 most recent items, popping the oldest items off the heap as newer ones are found.
+### Smart Sorting with Min-Heaps
+To keep the memory footprint constant, GRIP uses a **Min-Heap** (resultsHeap) for a "Top 20" newest posts leaderboard. 
+* **Why:** Instead of sorting a massive slice in memory, we maintain exactly 20 items. As new posts come in, we only keep them if they are newer than the oldest item on the heap. This is $O(N \log K)$ efficiency.
 
-### Resilience: Context & Timeouts
-Grip uses strict lifecycle management:
-* The Engine enforces a **2-second timeout** using `context.WithTimeout`.
-* Using .WithTimeout prevents a single slow or unresponsive API (e.g., a service outage at Dev.to) from hanging the entire application.
-* **Request Chaining:** The web handler passes the request context (r.Context()) to the engine, ensuring that if a user cancels the request, all underlying API calls are immediately aborted.
+### Resilience & "Good Citizen" Networking
+* **Timeouts:** We use context.WithTimeout to enforce a strict 2-second limit. This prevents one hanging API from stalling the whole app.
+* **Connection Pooling:** We use a custom http.Client with MaxIdleConnsPerHost to keep the "piping" efficient and avoid exhausting file descriptors.
+* **Safety Clauses:** The engine includes date-parsing fallbacks to ensure a single malformed timestamp doesn't crash the aggregator.
 
-## Decoupled Delivery (Headless Proof)
-The project demonstrates true decoupling by providing two distinct entry points that share the same business logic:
-
-1. **Web Head (cmd/grip):** Serves a UI using Go templates and provides a RESTful JSON API documented via Swagger.
-2. **CLI Head (cmd/cli):** A lightweight terminal tool that executes searches and streams results directly to stdout.
-
-## Data Flow
-1. **Entry:** An entry point (cmd/grip or cmd/cli) initializes the http.Client and engine.
-2. **Execution:** The Engine calls Collect(), fanning out goroutines to each registered source.
-3. **Collection:** Results are sent back over a channel and pushed into the Min-Heap.
-4. **Finalization:** The Engine returns the sorted slice. 
-5. **Presentation:** * The **Web Handler** executes an HTML template or encodes JSON.
-    * The **CLI** iterates and prints to the terminal.
+## Headless Proof: Multiple Entry Points
+The decoupling is proven by the existence of two different "heads" using the same internal logic:
+1. **Web (cmd/grip):** Uses html/template for a card-view UI as well as providing a Swagger-documented API.
+2. **CLI (cmd/cli):** A terminal-based tool for quick searches without the overhead of a web server.
