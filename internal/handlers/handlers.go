@@ -12,12 +12,13 @@ type Handler struct {
 	Engine *logic.Engine
 }
 //HandleHome godoc
-//@Summary Search Blogs for Developers
-//@Description Aggregates results from multiple trusted developer blog sites
+//@Summary Search Aggregated Blogs for Deveolpers
+//@Description Receives the 20 most recent posts from multiple sources(Dev.to, Hashnode, Hackernews etc...)
 //@Produce json
 //@Produce html
-//@Param q query string false "Search Query"
+//@Param q query string false "Search Keyword(defaults to golang)"
 //@Success 200 {array} logic.Post
+//@Failure 500 {string} string "Internal Server Error"
 //@Router / [get]
 func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")

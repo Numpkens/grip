@@ -50,8 +50,6 @@ func (f *FreeCodeCamp) Search(ctx context.Context, query string) ([]logic.Post, 
 	}
 	defer resp.Body.Close()
 
-	fmt.Printf("[DEBUG] FCC status code: %d for query: %s\n", resp.StatusCode, query)
-
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
 	}
@@ -77,8 +75,6 @@ func (f *FreeCodeCamp) Search(ctx context.Context, query string) ([]logic.Post, 
 		return nil, err
 	}
 
-	fmt.Printf("[DEBUG] FCC parsed %d posts from API\n", len(response.Data.Publication.Posts.Edges))
-
 	var posts []logic.Post
 	for _, edge := range response.Data.Publication.Posts.Edges {
 		parsedDate, _ := time.Parse(time.RFC3339, edge.Node.PublishedAt)
@@ -89,7 +85,5 @@ func (f *FreeCodeCamp) Search(ctx context.Context, query string) ([]logic.Post, 
 			PublishedAt: parsedDate,
 		})
 	}
-
-	fmt.Printf("[DEBUG] FCC (Hashnode) found %d posts\n", len(posts))
 	return posts, nil
 }
