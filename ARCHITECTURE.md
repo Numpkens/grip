@@ -5,6 +5,31 @@ GRIP is a **headless, concurrent search engine** built to aggregate developer-ce
 
 ## Core Components
 
+graph TD
+    User((User Search)) -->|Query| Engine[Search Engine]
+    
+    subgraph Concurrency_Layer [Fan-Out]
+        Engine -->|ctx + query| G1[Goroutine: Dev.to]
+        Engine -->|ctx + query| G2[Goroutine: HackerNews]
+        Engine -->|ctx + query| G3[Goroutine: RSS/XML]
+        Engine -->|ctx + query| G4[Goroutine: GraphQL]
+    end
+    
+    G1 -->|Result| Chan{Result Channel}
+    G2 -->|Result| Chan
+    G3 -->|Result| Chan
+    G4 -->|Result| Chan
+    
+    subgraph Data_Processing [Fan-In & Sorting]
+        Chan -->|Post| Heap[Min-Heap Top 20]
+        Heap -->|O N log K| Sort[Sort by Timestamp]
+    end
+    
+    Sort -->|Sorted Slice| Response[Final Result to UI/CLI]
+    
+    style Engine fill:#f9f,stroke:#333
+    style Heap fill:#bbf,stroke:#333
+
 ### 1. The Headless Engine (internal/logic)
 The engine is the central brain. It is completely "source-agnostic". It doesn't know about HTTP or HTML; it just accepts a search string and a context, manages the concurrency, and hands back a clean slice of results.
 

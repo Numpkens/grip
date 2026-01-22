@@ -1,3 +1,10 @@
+// Package handlers implements the HTTP interface for the GRIP aggregator.
+//
+// It serves as the "Web Head" and "API Head" of the application, utilizing 
+// Go's html/template for browser rendering and encoding JSON for API requests.
+// 
+// The handlers are designed to be format-agnostic, using the 'Accept' header 
+// to determine whether to serve a full web page or raw data.
 package handlers
 
 import (
@@ -6,7 +13,8 @@ import (
 	"net/http"
 	"encoding/json"
 )
-
+// Handler maintians the dependencies required to serve GRIP requests,
+// including the HTML templates and the core search Engine.
 type Handler struct {
 	Templ  *template.Template
 	Engine *logic.Engine
