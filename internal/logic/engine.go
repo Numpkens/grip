@@ -1,3 +1,11 @@
+// Package logic provides the core "brain" of the GRIP aggregator.
+//
+// It implements a headless engine that uses a Fan-Out pattern to query multiple 
+// developer blog sources concurrently. Results are aggregated and sorted 
+// using a Min-Heap to ensure only the top 20 newest posts are returned.
+//
+// See ARCHITECTURE.md in the project root for a deep dive into the 
+// concurrency model and source-agnostic design.
 package logic
 
 import (
