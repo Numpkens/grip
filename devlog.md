@@ -30,4 +30,7 @@ Spent alot of time changing desktop enviroments and trying a different IDE to se
 Spent the day rethinking my sorting logic and made some minor changes. Not alot of actual writing of code today in the project. Spent more time thinking of the articiture. I did notice that I was not using a pointer in one of the newer functions and I did not properly have a way to print that log. The result was that I had a source return 0 results but no way to know that because I was changing the copy of the slice not the slice in memory. 
 
 ## 1/21
-1/21 - Today  I added a  CLI tool  where the user can  pass in search queries directly from the terminal. Now the app has a  CLI,  Web UI,(This still needs work though)  and  API for external calls. I also wrote up an architecture.md to document how the pieces fit together. 
+Today  I added a  CLI tool  where the user can  pass in search queries directly from the terminal. Now the app has a  CLI,  Web UI,(This still needs work though)  and  API for external calls. I also wrote up an architecture.md to document how the pieces fit together. 
+
+## 1/22
+Been writing documentation today and it turned out to be more about repo troubleshooting than anything else. I hit a wall with pkgsite not resolving, only to realize it won't touch a project without a license.  I fixed it by adding the MIT License. I also had to move a .png to the project root because GitHub's renderer couldn't find it in a sub-folder.
