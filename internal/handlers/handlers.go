@@ -11,15 +11,19 @@ type Handler struct {
 	Templ  *template.Template
 	Engine *logic.Engine
 }
-//HandleHome godoc
-//@Summary Search Aggregated Blogs for Deveolpers
-//@Description Receives the 20 most recent posts from multiple sources(Dev.to, Hashnode, Hackernews etc...)
-//@Produce json
-//@Produce html
-//@Param q query string false "Search Keyword(defaults to golang)"
-//@Success 200 {array} logic.Post
-//@Failure 500 {string} string "Internal Server Error"
-//@Router / [get]
+// HandleHome godoc
+// @Summary      Search Aggregated Blogs
+// @Description  Aggregates the top 20 newest posts from Dev.to, Hashnode, HN, etc.
+// @Description  Supports a 2-second timeout and sorts by date using a Min-Heap.
+// @Produce      json
+// @Produce      html
+// @Param        q    query     string  false  "Search Keyword (defaults to 'golang')"
+// @Success      200  {array}   logic.Post "Returns JSON if Accept header is application/json"
+// @Success      200  {string}  string     "Returns HTML Card View by default"
+// @Failure      500  {string}  string     "Internal Server Error"
+// @Router       / [get]
+//
+// HandleHome serves as the main search interface. It detects the accept header to decide whether to use JSON or HTML.
 func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 	if query == "" {

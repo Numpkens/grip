@@ -6,14 +6,15 @@ import (
 	"sync"
 	"time"
 )
-
+// Post represents a standardized blog post from any external source.
 type Post struct {
-	Title       string    `json:"title"`
-	URL         string    `json:"url"`
-	Source      string    `json:"source"`
-	PublishedAt time.Time `json:"published_at"`
+	Title       string    `json:"title" example:"golang"`
+	URL         string    `json:"url" example: "https://dev.to/user/post"`
+	Source      string    `json:"source" example: "dev.to"`
+	PublishedAt time.Time `json:"published_at" example: "2026-01-21T10:00:00Z"`
 }
-
+// Source defines the contract for adding new source providers.
+// Any struct implementing Search can be added to the engine.
 type Source interface {
 	
 	Search(ctx context.Context, query string) ([]Post, error)
@@ -38,7 +39,8 @@ func (h *resultsHeap) Pop() interface{} {
 type Engine struct {
 	Sources []Source
 }
-
+// Collect triggers a concurrent fan-out at all sources and enforces a 2 second timeout rule.
+// Returns the 20 newest posts
 func (e *Engine) Collect (ctx context.Context, query string) []Post {
 	
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)

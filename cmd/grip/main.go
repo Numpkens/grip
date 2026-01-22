@@ -12,7 +12,12 @@ import (
 	"github.com/Numpkens/grip/internal/logic/sources" 
 	"github.com/swaggo/http-swagger"
 )
-
+// @title           GRIP Aggregator API
+// @version         1.0
+// @description     A concurrent search engine for developers.
+// @contact.name    David Gagnon
+// @host            localhost:8080
+// @BasePath        /
 func main() {
 	tmpl := template.Must(template.ParseFiles("templates/index.html"))
 
