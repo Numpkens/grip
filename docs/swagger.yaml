@@ -7,22 +7,25 @@ definitions:
       source:
         type: string
       title:
+        example: golang
         type: string
       url:
         type: string
     type: object
 host: localhost:8080
 info:
-  contact: {}
-  description: Concurrent Developer News Aggregator.
-  title: GRIP API
+  contact:
+    name: David Gagnon
+  description: A concurrent search engine for developers.
+  title: GRIP Aggregator API
   version: "1.0"
 paths:
   /:
     get:
-      description: Aggregates results from multiple trusted developer blog sites
+      description: Returns the top 20 newest posts. Detects 'Accept' header for JSON/HTML
+        toggle.
       parameters:
-      - description: Search Query
+      - description: Search Keyword (defaults to 'golang')
         in: query
         name: q
         type: string
@@ -31,10 +34,22 @@ paths:
       - text/html
       responses:
         "200":
-          description: OK
+          description: Successfully retrieved posts
           schema:
             items:
               $ref: '#/definitions/logic.Post'
             type: array
-      summary: Search Blogs for Developers
+        "400":
+          description: 'Bad Request: Invalid query parameters'
+          schema:
+            type: string
+        "500":
+          description: 'Internal Server Error: Template or JSON encoding failed'
+          schema:
+            type: string
+        "504":
+          description: 'Gateway Timeout: All sources failed to respond within 2s'
+          schema:
+            type: string
+      summary: Search Aggregated Blogs
 swagger: "2.0"

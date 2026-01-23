@@ -9,7 +9,9 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "contact": {
+            "name": "David Gagnon"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -17,28 +19,46 @@ const docTemplate = `{
     "paths": {
         "/": {
             "get": {
-                "description": "Aggregates results from multiple trusted developer blog sites",
+                "description": "Returns the top 20 newest posts. Detects 'Accept' header for JSON/HTML toggle.",
                 "produces": [
                     "application/json",
                     "text/html"
                 ],
-                "summary": "Search Blogs for Developers",
+                "summary": "Search Aggregated Blogs",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Search Query",
+                        "description": "Search Keyword (defaults to 'golang')",
                         "name": "q",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Successfully retrieved posts",
                         "schema": {
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/logic.Post"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: Invalid query parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Template or JSON encoding failed",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "504": {
+                        "description": "Gateway Timeout: All sources failed to respond within 2s",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -56,7 +76,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "golang"
                 },
                 "url": {
                     "type": "string"
@@ -72,8 +93,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "GRIP API",
-	Description:      "Concurrent Developer News Aggregator.",
+	Title:            "GRIP Aggregator API",
+	Description:      "A concurrent search engine for developers.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

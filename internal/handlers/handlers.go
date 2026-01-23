@@ -1,10 +1,5 @@
 // Package handlers implements the HTTP interface for the GRIP aggregator.
-//
-// It serves as the "Web Head" and "API Head" of the application, utilizing 
-// Go's html/template for browser rendering and encoding JSON for API requests.
-// 
-// The handlers are designed to be format-agnostic, using the 'Accept' header 
-// to determine whether to serve a full web page or raw data.
+//It serves the dual purpose of providing both web and api.
 package handlers
 
 import (
@@ -13,26 +8,27 @@ import (
 	"net/http"
 	"encoding/json"
 )
-// Handler maintians the dependencies required to serve GRIP requests,
-// including the HTML templates and the core search Engine.
+// Handler maintains the dependencies required to serve GRIP requests.
 type Handler struct {
 	Templ  *template.Template
 	Engine *logic.Engine
 }
-// HandleHome godoc
+// HandleHome aggregates and serves blog posts via HTML or JSON.
 // @Summary      Search Aggregated Blogs
-// @Description  Aggregates the top 20 newest posts from Dev.to, Hashnode, HN, etc.
-// @Description  Supports a 2-second timeout and sorts by date using a Min-Heap.
+// @Description  Returns the top 20 newest posts. Detects 'Accept' header for JSON/HTML toggle.
 // @Produce      json
 // @Produce      html
 // @Param        q    query     string  false  "Search Keyword (defaults to 'golang')"
-// @Success      200  {array}   logic.Post "Returns JSON if Accept header is application/json"
-// @Success      200  {string}  string     "Returns HTML Card View by default"
-// @Failure      500  {string}  string     "Internal Server Error"
+// @Success      200  {array}   logic.Post "Successfully retrieved posts"
+// @Failure      400  {string}  string     "Bad Request: Invalid query parameters"
+// @Failure      500  {string}  string     "Template Execution Error: Template or JSON encoding failed"
+// @Failure      504  {string}  string     "Gateway Timeout: All sources failed to respond within 2s"
 // @Router       / [get]
-//
-// HandleHome serves as the main search interface. It detects the accept header to decide whether to use JSON or HTML.
 func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/"{
+		http.NotFound(w, r)
+		return
+	}
 	query := r.URL.Query().Get("q")
 	if query == "" {
 		query = "golang"
@@ -48,6 +44,6 @@ func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
 
 	err := h.Templ.Execute(w, posts)
 	if err != nil {
-		http.Error(w, "Internal server Error", http.StatusInternalServerError)
+		http.Error(w, "Template Execution Error", http.StatusInternalServerError)
 	}
 }

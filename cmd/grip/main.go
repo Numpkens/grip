@@ -52,7 +52,7 @@ func main() {
 	
 	staticFiles := http.FileServer(http.Dir("./static"))
 	mux.Handle("/static/", http.StripPrefix("/static", staticFiles))
-	mux.HandleFunc("/docs/", httpSwagger.WrapHandler)
+	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
 	log.Println("Server starting on :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {

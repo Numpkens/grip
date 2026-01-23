@@ -28,15 +28,38 @@ I didn't want to build a "blind" crawler.
 * **Resilience:** I use context.WithTimeout to enforce a strict 2-second limit. This prevents one hanging API from stalling the whole app.
 
 ## Headless Proof: Multiple Entry Points
-The decoupling is proven by the fact that I have three different "heads" using the exact same logic:
+The decoupling is proven by having three different "heads" using the exact same logic:
 1. **Web (cmd/grip):** A card-view **UI** built with html/template and a Swagger-documented **API**.
 2. **CLI (cmd/cli):** A terminal tool for searching directly from the command line.
 
 ## Documentation
 Technical documentation for the internal logic and API is available through:
-* **Internal Logic:** Comprehensive documentation of exported types and concurrency patterns is maintained via [pkgdocs](https://pkg.go.dev/github.com/Numpkens/grip/internal/logic).
-* **API Reference:** When the web server is running, the Swagger UI is available at `/swagger/index.html` to test endpoints and view schemas.
+* **Internal Logic:** Comprehensive documentation of exported types and concurrency patterns is maintained via [pkgsite](https://pkg.go.dev/github.com/Numpkens/grip/internal/logic).
+* **API Reference:** When the web server is running, the Swagger UI is available at `/swagger/index.html`.
 * **Architecture:** For a deep dive into the concurrency model and the Min-Heap sorting logic, see ARCHITECTURE.md in the root directory.
+
+## Quick Start
+Use the following commands to start GRIP.
+
+### The Automated Method(Recommended)
+**Grants permission to execute and run the startup script**
+`Bash
+chmod +x run.sh
+`
+***You only need to run the above command once***
+**Start the server**
+`Bash
+./run.sh`
+***Now you can run the above command to start the server***
+### Standard Method (If you don't like scripts)
+#### WEB UI & API
+`Bash
+go run cmd/grip/main.go
+`
+### CLI
+`Bash
+go run cmd/cli/main.go "golong"`
+***The "golang" is a placeholder use whatever term you are searching for.***
 
 ## Lessons Learned
 The project had some growing pains. I originally struggled with the nested structure vs a flat one, but moving to internal/logic was the right call for scalability. I also learned the hard way that missing a pointer in a function can result in changing a copy of a slice in memory rather than the actual results, which taught me to be a lot more careful with how I log empty returns.

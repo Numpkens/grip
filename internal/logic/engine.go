@@ -1,11 +1,8 @@
 // Package logic provides the core "brain" of the GRIP aggregator.
-//
 // It implements a headless engine that uses a Fan-Out pattern to query multiple 
 // developer blog sources concurrently. Results are aggregated and sorted 
-// using a Min-Heap to ensure only the top 20 newest posts are returned.
-//
-// See ARCHITECTURE.md in the project root for a deep dive into the 
-// concurrency model and source-agnostic design.
+// using a Min-Heap to ensure a constant memory footprint while returning 
+// only the 20 most recent posts.
 package logic
 
 import (
@@ -22,13 +19,12 @@ type Post struct {
 	PublishedAt time.Time `json:"published_at" example: "2026-01-21T10:00:00Z"`
 }
 // Source defines the contract for adding new source providers.
-// Any struct implementing Search can be added to the engine.
 type Source interface {
 	
 	Search(ctx context.Context, query string) ([]Post, error)
 }
 
-
+//resultsHeap implements heap.Interface to maintain a Top 20 list by date.
 type resultsHeap []Post
 
 func (h resultsHeap) Len() int           { return len(h) }
@@ -47,10 +43,9 @@ func (h *resultsHeap) Pop() interface{} {
 type Engine struct {
 	Sources []Source
 }
-// Collect triggers a concurrent fan-out at all sources and enforces a 2 second timeout rule.
-// Returns the 20 newest posts
+// Collect triggers a concurrent fan-out at all sources and enforces a 2 second timeout rule and returns the 20 most recent posts.
 func (e *Engine) Collect (ctx context.Context, query string) []Post {
-	
+	// Set a hard dealine for the entire collection process
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
@@ -64,7 +59,7 @@ func (e *Engine) Collect (ctx context.Context, query string) []Post {
 		wg.Add(1)
 		go func(src Source) {
 			defer wg.Done()
-	
+			// IF a source fails or hangs we, we move on to keep the engine fast
 			posts, err := src.Search(ctx, query)
 			if err != nil {
 				return
@@ -72,7 +67,7 @@ func (e *Engine) Collect (ctx context.Context, query string) []Post {
 			resultsChan <- posts
 		}(s)
 	}
-
+// Close channel once all goroutines have reported in.
 	go func() {
 		wg.Wait()
 		close(resultsChan)
@@ -88,12 +83,12 @@ func (e *Engine) Collect (ctx context.Context, query string) []Post {
 			}
 		}
 	}
-
-	result := make([]Post, h.Len())
+// Drain heap into a sorted newest first slice.
+	final := make([]Post, h.Len())
 	for i := h.Len() - 1; i >= 0; i-- {
-		result[i] = heap.Pop(h).(Post)
+		final[i] = heap.Pop(h).(Post)
 	}
-	return result
+	return final
 }
 
 func NewEngine(source []Source) *Engine {
