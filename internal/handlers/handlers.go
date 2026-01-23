@@ -3,16 +3,26 @@
 package handlers
 
 import (
+	"encoding/json"
 	"github.com/Numpkens/grip/internal/logic"
 	"html/template"
 	"net/http"
-	"encoding/json"
+	"time"
+	"log"
 )
+
 // Handler maintains the dependencies required to serve GRIP requests.
 type Handler struct {
 	Templ  *template.Template
 	Engine *logic.Engine
 }
+// TemplateData sends server performance information for the template to consume and display
+type TemplateData struct {
+	Results []logic.Post
+	Query   string
+	Latency string
+}
+
 // HandleHome aggregates and serves blog posts via HTML or JSON.
 // @Summary      Search Aggregated Blogs
 // @Description  Returns the top 20 newest posts. Detects 'Accept' header for JSON/HTML toggle.
@@ -25,7 +35,7 @@ type Handler struct {
 // @Failure      504  {string}  string     "Gateway Timeout: All sources failed to respond within 2s"
 // @Router       / [get]
 func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/"{
+	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
@@ -34,7 +44,9 @@ func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		query = "golang"
 	}
 
+	start := time.Now()
 	posts := h.Engine.Collect(r.Context(), query)
+	latency := time.Since(start).Truncate(time.Millisecond).String()
 
 	if r.Header.Get("Accept") == "application/json" {
 		w.Header().Set("Content-Type", "application/json")
@@ -42,8 +54,15 @@ func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.Templ.Execute(w, posts)
+	data := TemplateData{
+		Results: posts,
+		Query:   query,
+		Latency: latency,
+	}
+
+	err := h.Templ.Execute(w, data)
 	if err != nil {
-		http.Error(w, "Template Execution Error", http.StatusInternalServerError)
+		log.Printf("Template execution error: %v", err)
+		return
 	}
 }

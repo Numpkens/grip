@@ -2,78 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GRIP Aggregator</title>
+    <title>GRIP // Blog Aggregator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root { --rp-base: #232136; --rp-surface: #2a273f; --rp-rose: #ea9a97; }
+        body { background: var(--rp-base); color: #e0def4; font-family: 'JetBrains Mono', monospace; }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.2rem;
+        }
+
+        .result-card {
+            background: var(--rp-surface);
+            border: 1px solid rgba(224, 222, 244, 0.1);
+            padding: 1.25rem;
+            transition: 0.2s ease-in-out;
+            height: 320px;
+            display: flex;
+            flex-direction: column;
+        }
+        .result-card:hover { border-color: var(--rp-rose); }
+    </style>
 </head>
-<body class="bg-gray-50 font-serif text-gray-900">
+<body class="p-10">
 
-    <div class="max-w-4xl mx-auto py-12 px-4">
-        <header class="mb-12">
-            <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
-                GRIP <span class="text-emerald-600">Aggregator</span>
-            </h1>
-            <p class="mt-3 text-lg text-gray-500">
-                A Blog aggregator built with Go.
-            </p>
-        </header>
-
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-200 mb-10">
-            <form action="/" method="GET" class="flex flex-col sm:flex-row gap-3">
-                <input 
-                    type="text" 
-                    name="q" 
-                    placeholder="Search tags (e.g. golang, linux, webdev)..." 
-                    class="flex-grow px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-                    required
-                >
-                <button 
-                    type="submit" 
-                    class="bg-emerald-800 hover:bg-emerald-900 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-md"
-                >
-                    Search
-                </button>
-            </form>
-        </div>
-
-        <div class="space-y-6">
-            {{range .}}
-            <article class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                <div class="flex items-center space-x-2 mb-3">
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 uppercase tracking-wider">
-                        {{.Source}}
-                    </span>
-                </div>
-                <h2 class="text-2xl font-bold text-gray-900 mb-3 leading-tight">
-                    {{.Title}}
-                </h2>
-                <div class="flex items-center">
-                    <a href="{{.URL}}" target="_blank" class="text-emerald-600 font-medium flex items-center hover:text-emerald-800 transition-colors">
-                        Read full article 
-                        <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                        </svg>
-                    </a>
-                    <p class="text-xs text-gray-400 mt-1">
-                      Published on: {{.PublishedAt.Format "Jan 02, 2006"}}
-                    </p>
-                </div>
-            </article>
-            {{else}}
-            <div class="text-center py-20 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H14" />
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No articles found</h3>
-                <p class="mt-1 text-sm text-gray-500">Try searching for a different tag or topic.</p>
-            </div>
-            {{end}}
-        </div>
-
-        <footer class="mt-16 pt-8 border-t border-gray-200 text-center text-gray-400 text-sm">
-            Built with Go Standard Library & Tailwind CSS
-        </footer>
+    <div class="fixed top-4 right-4 text-[10px] font-bold opacity-50">
+        LATENCY: {{.Latency}} | STATUS: 200_OK
     </div>
+
+    <header class="mb-20 text-center">
+        <h1 class="text-6xl font-black tracking-tighter text-[#ea9a97]">GRIP</h1>
+        
+        <form action="/" method="GET" class="mt-10 flex items-center justify-center gap-6">
+            <span class="text-[#f6c177] uppercase text-sm">filter:</span>
+            <input type="text" name="q" value="{{.Query}}" placeholder="Search tags (e.g. rust, nix, go)..." 
+                   class="bg-transparent border-b-2 border-[#3e8fb0] outline-none text-2xl w-96 text-center">
+        </form>
+    </header>
+
+    <main class="grid-container" id="main">
+        {{range .Results}}
+        <a href="{{.URL}}" target="_blank" class="result-card">
+            <div class="flex justify-between text-[10px] mb-4 text-[#c4a7e7] font-bold">
+                <span>{{.PublishedAt.Format "02/01/06"}}</span>
+                <span class="uppercase">[{{.Source}}]</span>
+            </div>
+            
+            <h2 class="text-sm font-bold leading-tight mb-4">{{.Title}}</h2>
+            
+            <p class="text-[11px] opacity-70 line-clamp-6 flex-grow">
+                Content from {{.Source}}. View the source link for full details.
+            </p>
+
+            <div class="mt-4 pt-4 border-t border-white/5 text-[9px] text-[#9ccfd8] flex justify-between">
+                <span>SOURCE_LINK</span>
+                <span>SHA1:{{printf "%.6s" .URL}}</span>
+            </div>
+        </a>
+        {{else}}
+        <div class="col-span-5 border-2 border-dashed border-white/10 p-20 text-center opacity-20">
+            NULL_RESULTS_RETURNED
+        </div>
+        {{end}}
+    </main>
 
 </body>
 </html>

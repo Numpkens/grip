@@ -23,7 +23,7 @@ func main() {
 
 
 	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 2 * time.Second,
 		Transport: &http.Transport{
 			MaxIdleConns:        100,
 			MaxIdleConnsPerHost: 20, 
