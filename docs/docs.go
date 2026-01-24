@@ -9,9 +9,7 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {
-            "name": "David Gagnon"
-        },
+        "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -19,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/": {
             "get": {
-                "description": "Returns the top 20 newest posts. Detects 'Accept' header for JSON/HTML toggle.",
+                "description": "Returns the top 20 newest posts.\nIMPORTANT: You must set the 'Accept: application/json' header to receive JSON.\nWithout this header, the server will default to serving the HTML template.",
                 "produces": [
                     "application/json",
                     "text/html"
@@ -43,20 +41,14 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "400": {
-                        "description": "Bad Request: Invalid query parameters",
+                    "404": {
+                        "description": "Not Found: Only the root path '/' is supported",
                         "schema": {
                             "type": "string"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error: Template or JSON encoding failed",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "504": {
-                        "description": "Gateway Timeout: All sources failed to respond within 2s",
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "string"
                         }
@@ -70,17 +62,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "published_at": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2026-01-21T10:00:00Z"
                 },
                 "source": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "dev.to"
                 },
                 "title": {
                     "type": "string",
                     "example": "golang"
                 },
                 "url": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://dev.to/user/post"
                 }
             }
         }
@@ -93,8 +88,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "GRIP Aggregator API",
-	Description:      "A concurrent search engine for developers.",
+	Title:            "GRIP API",
+	Description:      "A high-performance developer blog aggregator proxy.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

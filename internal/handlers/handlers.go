@@ -25,14 +25,15 @@ type TemplateData struct {
 
 // HandleHome aggregates and serves blog posts via HTML or JSON.
 // @Summary      Search Aggregated Blogs
-// @Description  Returns the top 20 newest posts. Detects 'Accept' header for JSON/HTML toggle.
+// @Description  Returns the top 20 newest posts. 
+// @Description  IMPORTANT: You must set the 'Accept: application/json' header to receive JSON. 
+// @Description  Without this header, the server will default to serving the HTML template.
 // @Produce      json
 // @Produce      html
 // @Param        q    query     string  false  "Search Keyword (defaults to 'golang')"
 // @Success      200  {array}   logic.Post "Successfully retrieved posts"
-// @Failure      400  {string}  string     "Bad Request: Invalid query parameters"
-// @Failure      500  {string}  string     "Template Execution Error: Template or JSON encoding failed"
-// @Failure      504  {string}  string     "Gateway Timeout: All sources failed to respond within 2s"
+// @Failure      404  {string}  string     "Not Found: Only the root path '/' is supported"
+// @Failure      500  {string}  string     "Internal Server Error"
 // @Router       / [get]
 func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
@@ -59,7 +60,7 @@ func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		Query:   query,
 		Latency: latency,
 	}
-
+	
 	err := h.Templ.Execute(w, data)
 	if err != nil {
 		log.Printf("Template execution error: %v", err)

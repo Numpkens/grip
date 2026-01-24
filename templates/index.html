@@ -7,64 +7,69 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
         :root { --rp-base: #232136; --rp-surface: #2a273f; --rp-rose: #ea9a97; }
-        body { background: var(--rp-base); color: #e0def4; font-family: 'JetBrains Mono', monospace; }
+        body { background: var(--rp-base); color: #e0def4; font-family: 'JetBrains Mono', monospace; margin: 0; padding: 40px; }
         
         .grid-container {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 1.2rem;
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 2.5rem !important;
+            width: 100% !important;
+            max-width: 1600px;
+            margin: 0 auto;
         }
 
-        .result-card {
+        .grip-entry {
             background: var(--rp-surface);
             border: 1px solid rgba(224, 222, 244, 0.1);
-            padding: 1.25rem;
-            transition: 0.2s ease-in-out;
-            height: 320px;
-            display: flex;
+            padding: 2rem;
+            transition: all 0.2s ease;
+            min-height: 280px !important;
+            display: flex !important;
             flex-direction: column;
+            text-decoration: none;
+            color: inherit;
         }
-        .result-card:hover { border-color: var(--rp-rose); }
+        .grip-entry:hover { 
+            border-color: var(--rp-rose); 
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px -15px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
-<body class="p-10">
+<body>
 
-    <div class="fixed top-4 right-4 text-[10px] font-bold opacity-50">
-        LATENCY: {{.Latency}} | STATUS: 200_OK
+    <div class="fixed top-4 right-4 text-[10px] font-bold opacity-30 uppercase tracking-widest">
+        Latency: {{.Latency}} | Status: 200_OK
     </div>
 
-    <header class="mb-20 text-center">
-        <h1 class="text-6xl font-black tracking-tighter text-[#ea9a97]">GRIP</h1>
-        
-        <form action="/" method="GET" class="mt-10 flex items-center justify-center gap-6">
-            <span class="text-[#f6c177] uppercase text-sm">filter:</span>
-            <input type="text" name="q" value="{{.Query}}" placeholder="Search tags (e.g. rust, nix, go)..." 
-                   class="bg-transparent border-b-2 border-[#3e8fb0] outline-none text-2xl w-96 text-center">
+    <header class="mb-24 text-center">
+        <h1 class="text-8xl font-black tracking-tighter text-[#ea9a97]">GRIP</h1>
+        <form action="/" method="GET" class="mt-12 flex items-center justify-center gap-6">
+            <span class="text-[#f6c177] uppercase text-lg font-bold tracking-widest">Search:</span>
+            <input type="text" name="q" value="{{.Query}}" placeholder="go, rust, linux ..." 
+                   class="bg-transparent border-b-2 border-[#3e8fb0] outline-none text-2xl w-[450px] text-center pb-2 focus:border-[#ea9a97] transition-colors">
         </form>
     </header>
 
     <main class="grid-container" id="main">
         {{range .Results}}
-        <a href="{{.URL}}" target="_blank" class="result-card">
-            <div class="flex justify-between text-[10px] mb-4 text-[#c4a7e7] font-bold">
-                <span>{{.PublishedAt.Format "02/01/06"}}</span>
-                <span class="uppercase">[{{.Source}}]</span>
+        <a href="{{.URL}}" target="_blank" class="grip-entry">
+            <div class="flex justify-between text-[10px] mb-8 text-[#c4a7e7] font-bold uppercase tracking-[0.2em]">
+                <span>{{.PublishedAt.Format "02 Jan 2006"}}</span>
+                <span>[{{.Source}}]</span>
             </div>
             
-            <h2 class="text-sm font-bold leading-tight mb-4">{{.Title}}</h2>
+            <h2 class="text-xl font-bold leading-tight mb-6 text-[#e0def4]">{{.Title}}</h2>
             
-            <p class="text-[11px] opacity-70 line-clamp-6 flex-grow">
-                Content from {{.Source}}. View the source link for full details.
-            </p>
-
-            <div class="mt-4 pt-4 border-t border-white/5 text-[9px] text-[#9ccfd8] flex justify-between">
-                <span>SOURCE_LINK</span>
-                <span>SHA1:{{printf "%.6s" .URL}}</span>
+            <div class="mt-auto text-center">
+                <p class="text-[10px] text-[#9ccfd8] font-bold uppercase tracking-widest opacity-80">
+                    → Click card to view article ←
+                </p>
             </div>
         </a>
         {{else}}
-        <div class="col-span-5 border-2 border-dashed border-white/10 p-20 text-center opacity-20">
-            NULL_RESULTS_RETURNED
+        <div class="col-span-full border-2 border-dashed border-white/10 p-32 text-center opacity-20 italic text-xl">
+            NO_DATA_RETURNED_FOR_QUERY
         </div>
         {{end}}
     </main>

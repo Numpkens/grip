@@ -14,9 +14,9 @@ import (
 // Post represents a standardized blog post from any external source.
 type Post struct {
 	Title       string    `json:"title" example:"golang"`
-	URL         string    `json:"url" example: "https://dev.to/user/post"`
-	Source      string    `json:"source" example: "dev.to"`
-	PublishedAt time.Time `json:"published_at" example: "2026-01-21T10:00:00Z"`
+	URL         string    `json:"url" example:"https://dev.to/user/post"`
+	Source      string    `json:"source" example:"dev.to"`
+	PublishedAt time.Time `json:"published_at" example:"2026-01-21T10:00:00Z"`
 }
 // Source defines the contract for adding new source providers.
 type Source interface {
