@@ -44,14 +44,15 @@ type Engine struct {
 	Sources []Source
 }
 // Collect triggers a concurrent fan-out at all sources and enforces a 2 second timeout rule and returns the 20 most recent posts.
-func (e *Engine) Collect (ctx context.Context, query string) []Post {
-	// Set a hard dealine for the entire collection process
+func (e *Engine) Collect(ctx context.Context, query string) []Post {
+	// Set a hard deadline for the entire collection process
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
 	h := &resultsHeap{}
 	heap.Init(h)
 	
+	// Buffered channel prevents worker goroutines from hanging if we exit early
 	resultsChan := make(chan []Post, len(e.Sources))
 	var wg sync.WaitGroup
 
@@ -59,7 +60,7 @@ func (e *Engine) Collect (ctx context.Context, query string) []Post {
 		wg.Add(1)
 		go func(src Source) {
 			defer wg.Done()
-			// IF a source fails or hangs we, we move on to keep the engine fast
+			// The context is passed to the search to cancel network calls if timeout hits
 			posts, err := src.Search(ctx, query)
 			if err != nil {
 				return
@@ -67,23 +68,39 @@ func (e *Engine) Collect (ctx context.Context, query string) []Post {
 			resultsChan <- posts
 		}(s)
 	}
-// Close channel once all goroutines have reported in.
+
+	// This goroutine ensures the channel is closed so the loop can finish if all sources report in
 	go func() {
 		wg.Wait()
 		close(resultsChan)
 	}()
 
-	for posts := range resultsChan {
-		for _, p := range posts {
-			if h.Len() < 20 {
-				heap.Push(h, p)
-			} else if p.PublishedAt.After((*h)[0].PublishedAt) {
-				heap.Pop(h)
-				heap.Push(h, p)
+	finished := 0
+Loop:
+	for finished < len(e.Sources) {
+		select {
+		case posts, ok := <-resultsChan:
+			if !ok {
+				break Loop
 			}
+			finished++
+			
+			for _, p := range posts {
+				if h.Len() < 20 {
+					heap.Push(h, p)
+				} else if p.PublishedAt.After((*h)[0].PublishedAt) {
+					heap.Pop(h)
+					heap.Push(h, p)
+				}
+			}
+
+		case <-ctx.Done():
+			// 2-second timeout hit! Break and return what we have so far
+			break Loop
 		}
 	}
-// Drain heap into a sorted newest first slice.
+
+	// Drain heap into a sorted "newest first" slice
 	final := make([]Post, h.Len())
 	for i := h.Len() - 1; i >= 0; i-- {
 		final[i] = heap.Pop(h).(Post)
