@@ -34,3 +34,15 @@ Today  I added a  CLI tool  where the user can  pass in search queries directly 
 
 ## 1/22
 Been writing documentation today and it turned out to be more about repo troubleshooting than anything else. I hit a wall with pkgsite not resolving, only to realize it won't touch a project without a license.  I fixed it by adding the MIT License. I also had to move a .png to the project root because GitHub's renderer couldn't find it in a sub-folder.
+
+## 1/23
+Rewrote some swagger comments for api documentation. completed a data flow chart and rewrote the index.html (which i hated lol) to give the ui portion more of a developer feel. Thinking of adding a weighted search , but also thinking if I do that then I am moving out of aggregator territory  and into search engine. Going forward I will start to switch more of my focus onto my capstone project for boot.dev and continue to make  iterations on this one.
+
+## 1/24
+I decided to make a small app in Nim just because I had only just heard of it. I used it to test the API functionality of Grip, and low and behold, I found a major bug.  I was unintentionally sending the HTML template to the API endpoint instead of the raw data. It took me forever to figure it out, the problem was in the handler logic I made and not in the main.go for the api (which is where I was looking and banging my head on my key board.) Now, it checks to see if the request contains a request for json before deciding what to send back.
+
+## 1/26
+Created a feature branch for the TUI head. I read some of the bubbletea docs and set up a first iteration for the TUI.
+
+## 1/28 
+I made the decision today to have the TUI match the Web UI as closely as possible. I used Bubble Tea and Lipgloss to build a grid layout that feels a lot like  the browser. My goal was to keep the styling consistent across the whole app; I want the user to have the same  experience whether they are using a browser or a terminal. I ran into some trouble getting the scrolling to feel smooth or to even work,  but I managed to find a solution by using a "viewport" that fixed it.

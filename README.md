@@ -61,5 +61,16 @@ go run cmd/grip/main.go
 go run cmd/cli/main.go "golong"`
 ***The "golang" is a placeholder use whatever term you are searching for.***
 
+## Deployment (Docker)
+GRIP is fully containerized for easy deployment to (Fly.io, Railway, etc.).
+
+### Build & Run Locally
+```bash
+# Build the image
+docker build -t grip-web .
+
+# Run the container
+docker run -p 8080:8080 grip-web
+```
 ## Lessons Learned
 The project had some growing pains. I originally struggled with the nested structure vs a flat one, but moving to internal/logic was the right call for scalability. I also learned the hard way that missing a pointer in a function can result in changing a copy of a slice in memory rather than the actual results, which taught me to be a lot more careful with how I log empty returns.

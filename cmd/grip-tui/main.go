@@ -1,6 +1,8 @@
-// Package main provides a TUI client for GRIP.
-// It replicates the Rosé Pine Moon aesthetic of the web interface
-// and consumes the core logic engine directly.
+// Package main provides a Terminal User Interface (TUI) client for GRIP.
+//
+// It replicates the Rosé Pine Moon aesthetic of the web interface,
+// featuring a dynamic grid layout, responsive search, and real-time 
+// performance metrics for engine latency.
 package main
 
 import (
@@ -16,13 +18,17 @@ import (
 	"github.com/Numpkens/grip/internal/logic"
 	"github.com/Numpkens/grip/internal/logic/sources"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Rosé Pine Moon palette - keep these in sync with index.html
 const (
+	colorBase    = "#232136"
 	colorSurface = "#2a273f"
 	colorRose    = "#ea9a97"
 	colorGold    = "#f6c177"
@@ -31,41 +37,94 @@ const (
 	colorMuted   = "#6e6a86"
 )
 
+// keyMap defines the keyboard shortcuts for the application navigation.
+type keyMap struct {
+	Up     key.Binding
+	Down   key.Binding
+	Search key.Binding
+	Enter  key.Binding
+	Quit   key.Binding
+}
+
+func (k keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Up, k.Down, k.Search, k.Enter, k.Quit}
+}
+
+func (k keyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{{k.Up, k.Down}, {k.Search, k.Enter, k.Quit}}
+}
+
+var keys = keyMap{
+	Up:     key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
+	Down:   key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
+	Search: key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "search")),
+	Enter:  key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "open")),
+	Quit:   key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
+}
+
 var (
-	// cardStyle defines the look of an article entry
+	cardWidth  = 34
+	cardHeight = 10
+
+	titleStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorRose)).
+			Bold(true).
+			MarginTop(1)
+
+	searchLabelStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color(colorGold)).
+				Bold(true).
+				MarginRight(1)
+
+	latencyStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorPine)).
+			Italic(true)
+
 	cardStyle = lipgloss.NewStyle().
 			Background(lipgloss.Color(colorSurface)).
 			Border(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color(colorPine)).
+			BorderForeground(lipgloss.Color(colorMuted)).
 			Padding(1, 2).
-			MarginLeft(2).
-			MarginBottom(1).
-			Width(75)
+			Width(cardWidth).
+			Height(cardHeight)
 
-	// activeStyle is our TUI version of a CSS :hover
 	activeStyle = cardStyle.Copy().
 			BorderForeground(lipgloss.Color(colorRose)).
 			Border(lipgloss.ThickBorder())
+
+	helpStyle = lipgloss.NewStyle().MarginTop(1).MarginLeft(2).PaddingBottom(1)
 )
 
-// resultsMsg is passed when the engine finishes its fan-out
-type resultsMsg []logic.Post
-
-type model struct {
-	engine  *logic.Engine
+type resultsMsg struct {
 	posts   []logic.Post
-	cursor  int
-	loading bool
-	spinner spinner.Model
-	query   string
+	latency time.Duration
 }
 
-// fetchCmd wraps the engine call to avoid blocking the UI thread
+type model struct {
+	engine      *logic.Engine
+	posts       []logic.Post
+	latency     time.Duration
+	cursor      int
+	loading     bool
+	spinner     spinner.Model
+	viewport    viewport.Model
+	searchInput textinput.Model
+	help        help.Model
+	keys        keyMap
+	searching   bool
+	ready       bool
+	width       int
+	height      int
+}
+
 func fetchCmd(m model) tea.Cmd {
 	return func() tea.Msg {
-		// engine.Collect handles the 2s timeout and min-heap logic
-		res := m.engine.Collect(context.Background(), m.query)
-		return resultsMsg(res)
+		start := time.Now()
+		res := m.engine.Collect(context.Background(), m.searchInput.Value())
+		return resultsMsg{
+			posts:   res,
+			latency: time.Since(start),
+		}
 	}
 }
 
@@ -73,146 +132,203 @@ func (m model) Init() tea.Cmd {
 	return tea.Batch(m.spinner.Tick, fetchCmd(m))
 }
 
-// Update handles our "Handwritten" logic for HJKL and Mouse support
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-
-		// Vertical movement: JK + Arrows
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
+		if m.searching {
+			switch msg.String() {
+			case "enter":
+				m.searching = false
+				m.loading = true
+				m.cursor = 0
+				m.searchInput.Blur()
+				return m, fetchCmd(m)
+			case "esc":
+				m.searching = false
+				m.searchInput.Blur()
+				return m, nil
 			}
-		case "down", "j":
-			if m.cursor < len(m.posts)-1 {
-				m.cursor++
-			}
-
-		case "enter":
-			if len(m.posts) > 0 {
-				launchBrowser(m.posts[m.cursor].URL)
-			}
+			m.searchInput, cmd = m.searchInput.Update(msg)
+			return m, cmd
 		}
 
-	case tea.MouseMsg:
-		// Mouse wheel integration
-		if msg.Type == tea.MouseWheelUp && m.cursor > 0 {
-			m.cursor--
-		} else if msg.Type == tea.MouseWheelDown && m.cursor < len(m.posts)-1 {
-			m.cursor++
-		}
-
-	case resultsMsg:
-		m.posts = msg
-		m.loading = false
-
-	case spinner.TickMsg:
-		var cmd tea.Cmd
-		m.spinner, cmd = m.spinner.Update(msg)
-		return m, cmd
-	}
-	return m, nil
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
+		switch {
+		case key.Matches(msg, m.keys.Quit):
 			return m, tea.Quit
-
-		// Explicitly capture both arrows and hjkl
-		case "up", "k":
+		case key.Matches(msg, m.keys.Search):
+			m.searching = true
+			m.searchInput.Focus()
+			return m, nil
+		case key.Matches(msg, m.keys.Up):
 			if m.cursor > 0 {
 				m.cursor--
+				m.viewport.LineUp(1)
 			}
-		case "down", "j":
+		case key.Matches(msg, m.keys.Down):
 			if m.cursor < len(m.posts)-1 {
 				m.cursor++
+				m.viewport.LineDown(1)
 			}
-
-		case "enter":
+		case key.Matches(msg, m.keys.Enter):
 			if len(m.posts) > 0 {
 				launchBrowser(m.posts[m.cursor].URL)
 			}
 		}
 
 	case tea.WindowSizeMsg:
-		// Dynamic resizing: update card width to fit terminal
-		cardStyle = cardStyle.Width(msg.Width - 10)
-		activeStyle = activeStyle.Width(msg.Width - 10)
+		m.width, m.height = msg.Width, msg.Height
+		headerHeight := 16
+		if !m.ready {
+			m.viewport = viewport.New(msg.Width, msg.Height-headerHeight)
+			m.ready = true
+		} else {
+			m.viewport.Width = msg.Width
+			m.viewport.Height = msg.Height - headerHeight
+		}
+		m.help.Width = msg.Width
 
 	case resultsMsg:
-		m.posts = msg
+		m.posts = msg.posts
+		m.latency = msg.latency
 		m.loading = false
+		m.cursor = 0
+		m.viewport.YOffset = 0
+		m.viewport.SetContent(m.renderGrid())
 
 	case spinner.TickMsg:
-		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
-		return m, cmd
+		cmds = append(cmds, cmd)
 	}
-	return m, nil
+
+	// Only update content if we aren't loading, to reflect cursor changes
+	if m.ready && !m.loading && len(m.posts) > 0 {
+		m.viewport.SetContent(m.renderGrid())
+	}
+
+	// Process viewport updates (handles mouse wheel automatically)
+	m.viewport, cmd = m.viewport.Update(msg)
+	cmds = append(cmds, cmd)
+
+	return m, tea.Batch(cmds...)
 }
 
-func (m model) View() string {
-	if m.loading {
-		return fmt.Sprintf("\n  %s Scoping sources for '%s'...\n", m.spinner.View(), m.query)
+func (m model) renderGrid() string {
+	if len(m.posts) == 0 {
+		return lipgloss.Place(m.width, 10, lipgloss.Center, lipgloss.Center, "NO_DATA_RETURNED")
 	}
 
-	var b strings.Builder
-	b.WriteString(headerStyle.Render(" GRIP // BLOG AGGREGATOR") + "\n\n")
+	cols := m.width / (cardWidth + 4)
+	if cols < 1 {
+		cols = 1
+	}
+
+	var rows []string
+	var currentRow []string
 
 	for i, p := range m.posts {
 		style := cardStyle
-		prefix := "  "
-
 		if i == m.cursor {
 			style = activeStyle
-			prefix = lipgloss.NewStyle().Foreground(lipgloss.Color(colorRose)).Render("→ ")
 		}
 
-		// Use lipgloss.JoinVertical for better alignment
 		meta := lipgloss.NewStyle().Foreground(lipgloss.Color(colorGold)).
-			Render(fmt.Sprintf("%s | %s", p.PublishedAt.Format("02 Jan"), p.Source))
-		
-		title := lipgloss.NewStyle().Foreground(lipgloss.Color(colorText)).
-			Bold(true).Render(p.Title)
+			Render(fmt.Sprintf("%s\n[%s]", p.PublishedAt.Format("02 Jan 2006"), strings.ToUpper(p.Source)))
+		title := lipgloss.NewStyle().Foreground(lipgloss.Color(colorText)).Bold(true).Render(p.Title)
 
-		// Join content before putting it in the styled box
-		content := lipgloss.JoinVertical(lipgloss.Left, meta, "", title)
-		
-		b.WriteString(fmt.Sprintf("%s%s\n", prefix, style.Render(content)))
+		cardContent := lipgloss.JoinVertical(lipgloss.Left, meta, "\n", title)
+		currentRow = append(currentRow, style.Render(cardContent))
+
+		if len(currentRow) == cols || i == len(m.posts)-1 {
+			rowStr := lipgloss.JoinHorizontal(lipgloss.Top, currentRow...)
+			rows = append(rows, lipgloss.PlaceHorizontal(m.width, lipgloss.Center, rowStr))
+			currentRow = []string{}
+		}
+	}
+	return lipgloss.JoinVertical(lipgloss.Center, rows...)
+}
+
+func (m model) View() string {
+	if !m.ready {
+		return "\n  Initializing..."
 	}
 
-	return b.String()
+	latStr := ""
+	if m.latency > 0 {
+		latStr = latencyStyle.Render(fmt.Sprintf("LATENCY: %v", m.latency))
+	}
+	topBar := lipgloss.PlaceHorizontal(m.width, lipgloss.Right, latStr)
+
+	largeTitle := titleStyle.Render(" ██████╗ ██████╗ ██╗██████╗ \n ██╔════╝ ██╔══██╗██║██╔══██╗\n ██║  ███╗██████╔╝██║██████╔╝\n ██║   ██║██╔══██╗██║██╔═══╝ \n ╚██████╔╝██║  ██║██║██║     \n  ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝     ")
+	headerTitle := lipgloss.Place(m.width, 6, lipgloss.Center, lipgloss.Center, largeTitle)
+
+	searchBar := lipgloss.JoinHorizontal(lipgloss.Center,
+		searchLabelStyle.Render("SEARCH:"),
+		m.searchInput.View(),
+	)
+	centeredSearch := lipgloss.Place(m.width, 3, lipgloss.Center, lipgloss.Center, searchBar)
+
+	var mainContent string
+	if m.loading {
+		mainContent = lipgloss.Place(m.width, m.viewport.Height, lipgloss.Center, lipgloss.Center,
+			fmt.Sprintf("%s Scoping sources...", m.spinner.View()))
+	} else {
+		mainContent = m.viewport.View()
+	}
+
+	helpView := helpStyle.Render(m.help.View(m.keys))
+
+	return lipgloss.JoinVertical(lipgloss.Left, topBar, headerTitle, centeredSearch, mainContent, helpView)
 }
+
+func launchBrowser(url string) {
+	cmd := "xdg-open"
+	if runtime.GOOS == "windows" {
+		cmd = "rundll32"
+	} else if runtime.GOOS == "darwin" {
+		cmd = "open"
+	}
+	args := []string{url}
+	if runtime.GOOS == "windows" {
+		args = append([]string{"url.dll,FileProtocolHandler"}, args...)
+	}
+	_ = exec.Command(cmd, args...).Start()
+}
+
 func main() {
 	client := &http.Client{Timeout: 10 * time.Second}
-	
-	// Direct engine assembly
 	engine := logic.NewEngine([]logic.Source{
-		&sources.DevTo{Client: client},
-		&sources.HackerNews{Client: client},
-		&sources.Hashnode{Client: client},
-		&sources.BootDev{Client: client},
-		&sources.Lobsters{Client: client},
-		&sources.FreeCodeCamp{Client: client},
+		&sources.DevTo{Client: client}, &sources.HackerNews{Client: client},
+		&sources.Hashnode{Client: client}, &sources.BootDev{Client: client},
+		&sources.Lobsters{Client: client}, &sources.FreeCodeCamp{Client: client},
 	})
+
+	ti := textinput.New()
+	ti.Placeholder = "type and press enter..."
+	ti.SetValue("golang")
+	ti.CharLimit = 50
+
+	h := help.New()
+	h.Styles.ShortKey = lipgloss.NewStyle().Foreground(lipgloss.Color(colorGold))
+	h.Styles.ShortDesc = lipgloss.NewStyle().Foreground(lipgloss.Color(colorText))
+	h.Styles.ShortSeparator = lipgloss.NewStyle().Foreground(lipgloss.Color(colorMuted))
 
 	spin := spinner.New(spinner.WithSpinner(spinner.MiniDot))
 	spin.Style = lipgloss.NewStyle().Foreground(lipgloss.Color(colorRose))
 
 	m := model{
-		engine:  engine,
-		query:   "golang", 
-		loading: true,
-		spinner: spin,
+		engine:      engine,
+		loading:     true,
+		spinner:     spin,
+		searchInput: ti,
+		keys:        keys,
+		help:        h,
 	}
 
-	// We use WithAltScreen to keep the user's terminal scrollback clean
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Program error: %v\n", err)
