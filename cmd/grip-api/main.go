@@ -1,5 +1,9 @@
 package main
-
+// @title           GRIP API
+// @version         1.0
+// @description     A high-performance developer blog aggregator proxy.
+// @host            localhost:8080
+// @BasePath        /
 import (
 	"net/http"
 	"time"
@@ -10,11 +14,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger" 
 )
 
-// @title           GRIP API
-// @version         1.0
-// @description     A high-performance developer blog aggregator proxy.
-// @host            localhost:8080
-// @BasePath        /
+
 func main() {
 	client := &http.Client{Timeout: 5 * time.Second}
 	

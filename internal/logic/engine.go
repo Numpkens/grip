@@ -39,8 +39,10 @@ func (h *resultsHeap) Pop() interface{} {
 	*h = old[0 : n-1]
 	return x
 }
-
+//Engine represents the core of the aggregator.
+// It manages a collection of sources and coordinates concurrent collection 
 type Engine struct {
+	// Sources is a slice of providers that the engine will query.
 	Sources []Source
 }
 // Collect triggers a concurrent fan-out at all sources and enforces a 2 second timeout rule and returns the 20 most recent posts.
@@ -108,6 +110,7 @@ Loop:
 	return final
 }
 
+// NewEngine creates a new instance of the aggregator with the provided sources.
 func NewEngine(source []Source) *Engine {
 	return &Engine{
 		Sources: source,

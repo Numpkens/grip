@@ -1,0 +1,13 @@
+services:
+  grip:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+    restart: unless-stopped
+    volumes:
+      - ./templates:/root/templates
+      - ./static:/root/static
