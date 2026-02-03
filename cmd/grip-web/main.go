@@ -52,13 +52,7 @@ func main() {
 	// @Param q query string false "Search query"
 	// @Success 200 {array} logic.Post
 	// @Router /api/search [get]
-	// @Summary Search posts
-	// @Description Returns raw search results as JSON
-	// @Tags search
-	// @Produce json
-	// @Param q query string false "Search query"
-	// @Success 200 {array} logic.Post
-	// @Router /api/search [get]
+	
 	mux.HandleFunc("/api/search", func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query().Get("q")
 

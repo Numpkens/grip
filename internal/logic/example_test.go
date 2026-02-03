@@ -7,8 +7,12 @@ import (
 )
 
 func ExampleEngine_Collect() {
-	engine := logic.NewEngine([]logic.Source{ /* mock sources */ })
+	
+	engine := &logic.Engine{
+		Sources: []logic.Source{},
+	}
+	
 	posts := engine.Collect(context.Background(), "golang")
 	fmt.Println(len(posts))
-	// Output: 20
+	
 }

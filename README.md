@@ -24,13 +24,15 @@ To keep memory usage constant, I didn't just sort a massive slice. I used a Min-
 ### "Good Citizen" Networking & Ethics
 I didn't want to build a "blind" crawler. 
 * **Respecting Robots.txt:** Before adding sources like Boot.dev, I checked their robots.txt to ensure I wasn't violating any rules.
-* **Identification:** I identify my crawler in the headers by sending my GitHub repo URL and email so admins know who is hitting their server.
+* **Identification:** I identify myself in the headers by sending my GitHub repo URL and email so admins know who is hitting their server.
 * **Resilience:** I use context.WithTimeout to enforce a strict 2-second limit. This prevents one hanging API from stalling the whole app.
 
 ## Headless Proof: Multiple Entry Points
-The decoupling is proven by having three different "heads" using the exact same logic:
-1. **Web (cmd/grip):** A card-view **UI** built with html/template and a Swagger-documented **API**.
-2. **CLI (cmd/cli):** A terminal tool for searching directly from the command line.
+The decoupling is proven by having four different "heads" using the exact same logic:
+1. **Web (cmd/grip-web):** A card-view **UI** built with html/template
+2. **JSON API (cmd/grip-api):** a Swagger-documented API.
+3. **CLI (cmd/grip-cli):** A terminal tool for searching directly from the command line.
+4. **TUI (cmd/grip-tui):** A terminal user interface built with Bubble Tea and Lip Gloss.
 
 ## Documentation
 Technical documentation for the internal logic and API is available through:
@@ -52,17 +54,30 @@ chmod +x run.sh
 ./run.sh`
 ***Now you can run the above command to start the server***
 ### Standard Method (If you don't like scripts)
-#### WEB UI & API
+
+#### WEB UI
 `Bash
-go run cmd/grip/main.go
+go run cmd/grip-web/main.go
 `
+
+#### API
+`Bash
+go run cmd/grip-api/main.go
+`
+
 ### CLI
 `Bash
-go run cmd/cli/main.go "golong"`
+go run cmd/grip-cli/main.go "golang"`
 ***The "golang" is a placeholder use whatever term you are searching for.***
 
+### TUI (Interactive Terminal)
+`Bash
+go run cmd/grip-tui/main.go
+`
+*Use / to search, arrow keys to navigate and 'Enter' to open a post in your default browser.*
+
 ## Deployment (Docker)
-GRIP is fully containerized for easy deployment to (Fly.io, Railway, etc.).
+GRIP is containerized for easy deployment of the web and api heads to (Fly.io, Railway, etc.).
 
 ### Build & Run Locally
 ```bash
@@ -72,7 +87,6 @@ docker build -t grip .
 # Run the container
 docker run -p 8080:8080 grip
 ```
-Visit http://localhost:8080 for the WebUI or http://localhost:8080/swagger/index.html for the API.
 
 ## Lessons Learned
 The project had some growing pains. I originally struggled with the nested structure vs a flat one, but moving to internal/logic was the right call for scalability. I also learned the hard way that missing a pointer in a function can result in changing a copy of a slice in memory rather than the actual results, which taught me to be a lot more careful with how I log empty returns.
