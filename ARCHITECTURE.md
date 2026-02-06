@@ -3,7 +3,9 @@
 ## Overview
 GRIP is a **headless, concurrent search engine** built to aggregate developer-centered blog content into a single stream. The goal was a "Logic-First" approach: keeping the engine's "brain" entirely separate from how the data is actually seen (web, JSON, or CLI). This ensures that the engine doesn't care if it's feeding a browser, terminal or a separate application.
 ![GRIP Data Flow](architecture-flow.png)
+
 ## Core Components
+GRIP's architecture is built on the principle of separation of concerns. The system is divided into three distinct layers:
 
 ### 1. The Headless Engine (internal/logic)
 The engine is the central brain. It is completely "source-agnostic". It doesn't know about HTTP or HTML; it just accepts a search string and a context, manages the concurrency, and hands back a clean slice of results.
