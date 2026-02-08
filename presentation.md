@@ -1,120 +1,106 @@
-  
-#   
-#          GRIP: Logic-First Aggregator  
-#      ------------------------------------  
-#         		David Gagnon
+# 
+# 
+                                                GRIP: Go Reader Interface Processor
 
+                                     *--------------------------------------------*
+
+                                                        David Gagnon
+#
+#
+---
+#
+#
+
+                                         I. The Problem
+### "Information Overload & Fragmentation"
+
+- **The Friction:** Developers lack a single, curated source for real-time, high-quality technical content.
+- **The Gap:** Existing aggregators are either too slow, cluttered with ads, or "UI-locked."
+- **The Solution:** A high-performance, concurrent engine that delivers a unified stream of the latest dev-centered posts across any interface.
+#
+#
 ---
 
-# The Core Architecture  
-### "Brain vs. Body"
+# 
+#
+                                    II. Core Architecture
+### "Separation of Concerns"
 
-> "The engine doesn't know about HTTP. It only knows about Data."
+- **Headless Engine:** The "brain" is isolated in `internal/logic`.
+- **Strategy Pattern:** Uses a `Source` interface to remain provider-agnostic.
+- **Dependency Injection:** Sources (Dev.to, HN, etc.) are injected at startup.
 
-```go  
-// internal/logic/engine.go  
-type Post struct {  
-    Title       string    `json:"title"`  
-    URL         string    `json:"url"`  
-    Source      string    `json:"source"`  
-    PublishedAt time.Time `json:"published_at"`  
-}
-
-type Source interface {  
-    Search(ctx context.Context, query string) ([]Post, error)  
+> "The engine doesn't care if it's feeding a browser, a terminal, or a separate application."
+#
+#
+---
+#
+#
+                                     III. Concurrency
+### "Fan-Out / Fan-In Pattern"
+```go
+ // Parallelizing 6 sources for sub-500ms response
+for _, s := range e.Sources {
+    wg.Add(1)
+    go func(src Source) {
+    defer wg.Done()
+    // Every source is context-aware
+    posts, _ := src.Search(ctx, query)
+    resultsChan <- posts
+    }(s)
 }
 ```
+- Performance: Reduced latency from ~1000ms to sub-500ms.
+- Resilience: Enforced 2-second timeout prevents system stalls.
+#
+#
 ---
-
-# **Concurrency: Fan-Out Pattern**
-
-### **Parallelizing 6 Sources**
-
-```Go  
-// internal/logic/engine.go  
-func (e *Engine) Collect(ctx context.Context, query string) []Post {  
-    ctx, cancel := context.WithTimeout(ctx, 2*time.Second)  
-    defer cancel()
-
-    resultsChan := make(chan []Post, len(e.Sources))  
-    var wg sync.WaitGroup
-
-    for _, s := range e.Sources {  
-        wg.Add(1)  
-        go func(src Source) {  
-            defer wg.Done()  
-            posts, _ := src.Search(ctx, query)  
-            resultsChan <- posts  
-        }(s)  
-    }  
+#
+#
+                                    IV. Technical Design
+### "Smart Sorting with Min-Heaps"
+```Go
+// O(N log K) Efficiency
+for _, p := range posts {
+    if h.Len() < 20 {
+        heap.Push(h, p)
+    } else if p.PublishedAt.After((*h)[0].PublishedAt) {
+        // Root (*h)[0] is the 'Oldest' item
+        heap.Pop(h)
+        heap.Push(h, p)
+    }
 }
 ```
-
+- Constant Footprint: Memory usage never exceeds 20 items.
+- Logic: Only keep a post if it is newer than the "oldest" on the heap.
+#
+#
 ---
-
-# **Algorithmic Edge: Min-Heap**
-
-### **Efficiency: O(N log K)**
-
-```Go  
-// Maintaining a constant Top 20 leaderboard  
-for _, p := range posts {  
-    if h.Len() < 20 {  
-        heap.Push(h, p)  
-    } else if p.PublishedAt.After((*h)[0].PublishedAt) {  
-        // Root (*h)[0] is the 'Min' (Oldest)  
-        heap.Pop(h)  
-        heap.Push(h, p)  
-    }  
-}```
-
-* **Flat Memory:** Footprint never grows beyond 20 items.  
-* **Comparison:** New posts only enter if newer than the "oldest."
-
----
-
-# **Cross-Language Reliability**
-
-### **Consuming the Go API in Nim**
-
-```Nim  
-import std/[httpclient, json]
-
-# Proving the Headless contract  
-let client = newHttpClient()  
-let response = client.getContent("http://localhost:8080/")  
+# 
+#
+                        V. Headless Proof
+### "Language Agnostic Reliability"
+Nim
+ *External Nim client consuming the Go API*
+```Nim
+let client = newHttpClient()
+let response = client.getContent("http://localhost:8080/")
 let data = parseJson(response)
 
-for post in data:  
+for post in data:
     echo post["title"].getStr(), " | ", post["source"].getStr()
 ```
-* **Proof:** Decoupled architecture allows any language to join.
-
+- The Contract: Proves the Go engine provides a stable, portable API.
+- Versatility: Shows true decoupling from the Go runtime.
+#
+#
 ---
-
-# **Production Readiness**
-
-### **Multi-Head Delivery**
-
-* **Web UI:** `cmd/grip-web`  
-* **JSON API:** `cmd/grip-api` (Port 8080)  
-* **CLI:** `cmd/grip-cli`  
-* **TUI:** `cmd/grip-tui` (Bubble Tea/Lip Gloss)
-
-```Bash  
-# Multi-stage Docker build  
-docker build -t grip .  
-docker run -p 8080:8080 grip
-```
----
-
-# **Final Summary**
-
-* **Decoupled:** The engine is purely logic-driven.  
-* **Concurrent:** Fan-out reduces latency by >50%.  
-* **Resilient:** Enforced by 2s context timeouts.
-
-### **Questions?**
-
----
-
+#
+#
+                         VI. THE DEMO
+### "Four Heads, One Brain"
+Pane 1: Web UI (cmd/grip-web)
+Pane 2: Interactive TUI (cmd/grip-tui)
+Pane 3: External Nim Client (API Proof)
+Pane 4: CLI Tool (cmd/grip-cli)
+**Search: Watch as all four interfaces update simultaneously.**
