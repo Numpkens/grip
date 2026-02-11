@@ -2,7 +2,7 @@
 
 GRIP is a headless, concurrent search engine built to aggregate developer blogs into a single stream. I built this with a "Logic-First" approach, meaning the engine’s brain is entirely separate from the UI. It doesn't care if it’s feeding a browser, a terminal, or another application.
 
-## Why I Built This
+## Motivation
 Most aggregators are slow or locked into one specific front-end. I wanted something lightweight that followed proper Go patterns  using a nested structure to keep routing and data logic separate.
 
 ## Core Architecture
