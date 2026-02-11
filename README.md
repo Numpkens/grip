@@ -39,6 +39,32 @@ Technical documentation for the internal logic and API is available through:
 * **Internal Logic:** Comprehensive documentation of exported types and concurrency patterns is maintained via [pkgsite](https://pkg.go.dev/github.com/Numpkens/grip/internal/logic).
 * **API Reference:** When the web server is running, the Swagger UI is available at `/swagger/index.html`.
 * **Architecture:** For a deep dive into the concurrency model and the Min-Heap sorting logic, see ARCHITECTURE.md in the root directory.
+## Contributing
+## 🤝 Contributing
+
+### Clone the repo
+
+```bash
+git clone https://github.com/Numpkens/grip
+cd grip
+```
+
+### Build the compiled binary
+
+```bash
+go build
+```
+
+### Run the test suite
+
+```bash
+go test ./...
+```
+
+### Submit a pull request
+
+If you'd like to contribute, please fork the repository and open a pull request to the `main` branch.
+
 
 ## Quick Start
 Use the following commands to start GRIP.
@@ -78,6 +104,7 @@ go run cmd/grip-tui/main.go
 
 ## Deployment (Docker)
 GRIP is containerized for easy deployment of the web and api heads to (Fly.io, Railway, etc.).
+
 
 ### Build & Run Locally
 ```bash
