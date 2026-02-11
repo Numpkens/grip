@@ -87,7 +87,7 @@ docker build -t grip .
 # Run the container
 docker run -p 8080:8080 grip
 ```
-## Demo Video
+## Usage and Demo
 The video walkthrough can be seen at:
 [The Grip Project Walkthrough](https://youtu.be/wSfzILImnK4)
 
